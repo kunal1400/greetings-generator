@@ -155,9 +155,7 @@ const getCircularImage = ( img, currentTemplate ) => {
 	})
 	.catch(function(error){
 		return error
-	})
-
-	
+	})	
 }
 
 module.exports = router;
