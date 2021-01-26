@@ -14,7 +14,7 @@
 			<div class="col-md-12"><h1>Edit Image</h1></div>			
 			<div class="col-md-6">
 				<form onsubmit="callApi()">
-					<input type="hidden" name="template_name" value="happybirthday">					
+					<input type="hidden" name="template_name" value="birthdayTemplate">					
 
 					<fieldset class="scheduler-border">
 						<legend class="scheduler-border">Color Effects</legend>
@@ -114,6 +114,7 @@
 		var reader = new FileReader();
 		reader.onloadend = function() { 
 			$("#displayImg").attr("src", reader.result);
+			callApi(reader.result)
 		}
 		reader.readAsDataURL(img);
     }
@@ -122,9 +123,23 @@
 		var value = jQuery(e).value
 		jQuery(e).closest(".form-group").find(".rangeValue").text(value)
 	}
-	function callApi() {
-		
+
+	function callApi( inputImage ) {
+		var template_name = $("input[name='template_name']").val()
+		$.ajax({
+			url: "http://localhost:3000",
+			method: "POST",
+			data: { inputImage, template_name },
+			dataType: "html"
+		})
+		.done(function( msg ) {
+			console.log(msg, "post message")
+		})
+		.fail(function( jqXHR, textStatus ) {
+			alert( "Request failed: " + textStatus );
+		});
 	}
+
 	jQuery(document).ready(function() {
 
 	})
