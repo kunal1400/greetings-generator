@@ -167,6 +167,20 @@ router.post('/', function(req, res, next) {
 })
 
 const getTemplateData = (template_name) => {
+	/***
+	Jimp.BLEND_SOURCE_OVER;
+	Jimp.BLEND_DESTINATION_OVER;
+	Jimp.BLEND_MULTIPLY;
+	Jimp.BLEND_ADD; automatically adjusting color
+	Jimp.BLEND_SCREEN; automatically adjusting color
+	Jimp.BLEND_OVERLAY;
+	Jimp.BLEND_DARKEN;
+	Jimp.BLEND_LIGHTEN;
+	Jimp.BLEND_HARDLIGHT;
+	Jimp.BLEND_DIFFERENCE;
+	Jimp.BLEND_EXCLUSION;
+	***/
+
 	if ( template_name == "birthdayTemplate") {
 		return {
 			name: "birthdayTemplate",
@@ -215,6 +229,23 @@ const getTemplateData = (template_name) => {
 			mode: Jimp.BLEND_OVERLAY,
 			opacitySource: 0.5,
 			opacityDest: 1.0, // i.e Base Image
+			text: "Hello World"	
+		}
+	}
+	else if( template_name == "scrapbook") {
+		return {
+			name: "scrapbook",
+			inputFile: '../templates/scrapbook.png',
+			inputFileRotateDeg: 1.45,
+			convertToShape: null,			
+			requiredWidth: 673,
+			requiredHeight: 898,
+			outputFile: '../templates/output/scrapbookoutput.png',
+			imgToReplaceX: 188,
+			imgToReplaceY: 267,
+			mode: Jimp.BLEND_OVERLAY,
+			opacitySource: 1.0,
+			opacityDest: 0.5, // i.e Base Image
 			text: "Hello World"	
 		}
 	}
