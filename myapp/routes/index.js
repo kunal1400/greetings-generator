@@ -96,16 +96,23 @@ router.post('/', function(req, res, next) {
 	let inputImage = req.body.inputImage
 	// Removing `data:image/png;base64,` from string so it will be original base 64 image
 	let imageData = inputImage.split(",")
-	// let base64Image = imageData[1]
-	let base64Image = "../templates/Models/nora-fatehi.jpg"	
+
+	if (typeof Buffer.from === "function") {
+		// Node 5.10+
+		var base64Image = Buffer.from(imageData[1], 'base64'); // Ta-da
+	} else {
+		// older Node versions, now deprecated
+		var base64Image = new Buffer(imageData[1], 'base64'); // Ta-da
+	}
+
+	// let base64Image = "../templates/Models/nora-fatehi.jpg"	
 
 	/**
 	* 2: Getting template from data
 	**/
 	let currentTemplate = getTemplateData(req.body.template_name)
 	if ( currentTemplate ) {
-
-		Jimp.read(currentTemplate.inputFile)		
+		Jimp.read(currentTemplate.inputFile)
 		.then(function(greeting) {
 			if (currentTemplate.convertToShape && currentTemplate.convertToShape == "circular") {
 				return getCircularImage( base64Image, currentTemplate)			
