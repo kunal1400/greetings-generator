@@ -112,19 +112,21 @@ router.post('/', function(req, res, next) {
 	**/
 	let currentTemplate = getTemplateData(req.body.template_name)
 	if ( currentTemplate ) {
-		Jimp.read(currentTemplate.inputFile)
+		let {inputFile, convertToShape, imgToReplaceX, imgToReplaceY, mode, opacitySource, opacityDest, requiredWidth, requiredHeight, inputFileRotateDeg, outputFile} = currentTemplate
+
+		Jimp.read(inputFile)
 		.then(function(greeting) {
-			if (currentTemplate.convertToShape && currentTemplate.convertToShape == "circular") {
+			if (convertToShape && convertToShape == "circular") {
 				return getCircularImage( base64Image, currentTemplate)			
 				.then(function(modifiedNooraImage){
 					/** 
 					* Appending the input image in the choosen greeting	
 					**/
 					return greeting
-					.composite(modifiedNooraImage, currentTemplate.imgToReplaceX, currentTemplate.imgToReplaceY, {
-						mode: currentTemplate.mode,
-						opacitySource: currentTemplate.opacitySource,
-						opacityDest: currentTemplate.opacityDest
+					.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY, {
+						mode: mode,
+						opacitySource: opacitySource,
+						opacityDest: opacityDest
 					})					
 				})				
 			} 
@@ -132,27 +134,27 @@ router.post('/', function(req, res, next) {
 				return Jimp.read( base64Image )
 				.then(nooraImage => {
 					return nooraImage
-					.resize(currentTemplate.requiredWidth, currentTemplate.requiredHeight)
-					.rotate(currentTemplate.inputFileRotateDeg)
+					.resize(requiredWidth, requiredHeight)
+					.rotate(inputFileRotateDeg)
 				})
 				.then(function(modifiedNooraImage){
 					/** 
 					* Appending the input image in the choosen greeting	
 					**/
 					return greeting
-					.composite(modifiedNooraImage, currentTemplate.imgToReplaceX, currentTemplate.imgToReplaceY, {
-						mode: currentTemplate.mode,
-						opacitySource: currentTemplate.opacitySource,
-						opacityDest: currentTemplate.opacityDest
+					.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY, {
+						mode: mode,
+						opacitySource: opacitySource,
+						opacityDest: opacityDest
 					})				
-				})				
+				})
 			}
 		})
 		.then(function(jimpInstance){
-	  		return jimpInstance.writeAsync(currentTemplate.outputFile);
+	  		return jimpInstance.writeAsync(outputFile);
 		})
 		.then(function(){
-	  		res.send({ status: true })
+	  		res.send({ status: true, data: outputFile })
 		})
 		.catch(err => {
 			console.error(err);
