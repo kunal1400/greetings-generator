@@ -3,6 +3,23 @@ var router = express.Router();
 var Jimp = require('jimp');
 var outputDirectory = "../templates/output/"
 
+/**
+* COMPOSITION NOTES:
+* 1. image.blit: Delete all secion under this image - ex- https://stackoverflow.com/questions/49556025/place-image-over-an-other-image-using-jimp
+* 2. image.mask: Masks a source image on to this image using average pixel colour. A completely black pixel on the mask will turn a pixel in the image completely transparent.
+*
+* https://www.npmjs.com/package/replace-color
+* - Remove a watermark
+* - Change a background color from a green to a blue one
+* - Change a background color from a green to a transparent one (using hex type)
+* - Change a background color from a green to a 50% transparent green (using rgb type)
+*
+* https://codingshiksha.com/javascript/image-processing-in-node-js-using-jimp-library-coding-shiksha/
+*
+* https://blog.logrocket.com/image-processing-with-node-and-jimp - watermark and resize
+*
+**/
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
 	// Jimp.read(currentTemplate.inputFile)
@@ -79,6 +96,13 @@ router.get('/', function(req, res, next) {
 });
 
 /* Generate greeting api. */
+/**
+* This is the post method and required 2 parameters
+*
+* inputImage = base64 string of the image
+*
+* template_name = Name of the base template on which image will be appended
+**/
 router.post('/', function(req, res, next) {
 	if(!req.body.inputImage) {
 		res.send({status:false, message: "inputImage is required"})
@@ -112,9 +136,17 @@ router.post('/', function(req, res, next) {
 	**/
 	let currentTemplate = getTemplateData(req.body.template_name)
 	if ( currentTemplate ) {
-		let {inputFile, convertToShape, imgToReplaceX, imgToReplaceY, mode, opacitySource, opacityDest, requiredWidth, requiredHeight, inputFileRotateDeg, outputFile} = currentTemplate
+		let {inputFile, convertToShape, imgToReplaceX, imgToReplaceY, mode, opacitySource, opacityDest, requiredWidth, requiredHeight, inputFileRotateDeg, outputFile, type} = currentTemplate
 
 		Jimp.read(inputFile)
+		.then(function(mainGreeting) {
+			if (type === "_frame") {
+				return mainGreeting.resize(requiredWidth, requiredHeight)
+			}
+			else {
+				return mainGreeting
+			}
+		})
 		.then(function(greeting) {
 			if (convertToShape && convertToShape == "circular") {
 				return getCircularImage( base64Image, currentTemplate)			
@@ -133,11 +165,28 @@ router.post('/', function(req, res, next) {
 			else {
 				return Jimp.read( base64Image )
 				.then(nooraImage => {
-					return nooraImage
-					.resize(requiredWidth, requiredHeight)
-					.rotate(inputFileRotateDeg)
+					/**
+					* Resizing the input image as per required in the template
+					**/
+					if (requiredWidth && requiredHeight) {
+						return nooraImage.resize(requiredWidth, requiredHeight)
+					}
+					else {
+						return nooraImage
+					}
 				})
-				.then(function(modifiedNooraImage){
+				.then(function(nooraImage) {
+					/**
+					* Resizing the input image as per required in the template
+					**/
+					if (inputFileRotateDeg) {
+						return nooraImage.rotate(inputFileRotateDeg)
+					}
+					else {
+						return nooraImage
+					}
+				})
+				.then(function(modifiedNooraImage) {					
 					/** 
 					* Appending the input image in the choosen greeting	
 					**/
@@ -146,8 +195,8 @@ router.post('/', function(req, res, next) {
 						mode: mode,
 						opacitySource: opacitySource,
 						opacityDest: opacityDest
-					})				
-				})
+					})
+				})				
 			}
 		})
 		.then(function(jimpInstance){
@@ -195,7 +244,8 @@ const getTemplateData = (template_name) => {
 			mode: Jimp.BLEND_SOURCE_OVER,
 			opacitySource: 1.0,
 			opacityDest: 1.0,
-			text: "Hello World"
+			text: "Hello World",
+			type: "_greeting"
 		}
 	}
 	else if( template_name == "holidayTemplate") {
@@ -212,7 +262,8 @@ const getTemplateData = (template_name) => {
 			mode: Jimp.BLEND_OVERLAY,
 			opacitySource: 0.5,
 			opacityDest: 1.0, // i.e Base Image
-			text: "Hello World"	
+			text: "Hello World",
+			type: "_greeting"			
 		}
 	}
 	else if( template_name == "christmasHolidayTemplate") {
@@ -229,7 +280,8 @@ const getTemplateData = (template_name) => {
 			mode: Jimp.BLEND_OVERLAY,
 			opacitySource: 0.5,
 			opacityDest: 1.0, // i.e Base Image
-			text: "Hello World"	
+			text: "Hello World",
+			type: "_greeting"			
 		}
 	}
 	else if( template_name == "scrapbook") {
@@ -245,8 +297,27 @@ const getTemplateData = (template_name) => {
 			imgToReplaceY: 267,
 			mode: Jimp.BLEND_OVERLAY,
 			opacitySource: 1.0,
-			opacityDest: 0.5, // i.e Base Image
-			text: "Hello World"	
+			opacityDest: 1.0, // i.e Base Image
+			text: "Hello World",
+			type: "_greeting"			
+		}
+	}
+	else if( template_name == "__beautiful_love_frame_background") {
+		return {
+			name: "__beautiful_love_frame_background",
+			inputFile: '../templates/Frames/__beautiful_love_frame_background.png',
+			inputFileRotateDeg: 0,
+			convertToShape: null,			
+			requiredWidth: 542,
+			requiredHeight: 640,
+			outputFile: '../templates/output/beautiful_love_frame_background.png',
+			imgToReplaceX: 0,
+			imgToReplaceY: 0,
+			mode: Jimp.BLEND_OVERLAY,
+			opacitySource: 1.0,
+			opacityDest: 1.0, // i.e Base Image
+			text: "Hello World",
+			type: "_frame"			
 		}
 	}
 	else {
