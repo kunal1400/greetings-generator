@@ -1,26 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Bootstrap Example</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </head>
-<body>  
+<body>
 	<div class="container">
 		<div class="row">
-			<div class="col-md-12"><h1>Edit Image</h1></div>			
+			<div class="col-md-12"><h1>Edit Image</h1></div>
 			<div class="col-md-6">
 				<form onsubmit="callApi()">
-					
+
 					<!-- <input type="hidden" name="template_name" value="birthdayTemplate">					 -->
 					<!-- <input type="hidden" name="template_name" value="christmasHolidayTemplate">					 -->
 					<!-- <input type="hidden" name="template_name" value="scrapbook">					 -->
-					
-					<input type="hidden" name="template_name" value="__beautiful_love_frame_background">					
 
+					<!-- <input type="hidden" name="template_name" value="__beautiful_love_frame_background">					 -->
+          <!-- <input type="hidden" name="template_name" value="__birthday_background">					 -->
+          <!-- <input type="hidden" name="template_name" value="__christmas_border_frame"> -->
+
+          <select name="template_name">
+            <option value="__christmas_border_frame">__christmas_border_frame</option>
+            <option value="__elegant_golden_frame">__elegant_golden_frame</option>
+            <option value="__realistic_frame_made_of_fir">__realistic_frame_made_of_fir</option>
+            <option value="__red_transparent_love_heart">__red_transparent_love_heart</option>
+            <option value="__spring_grass_with_butterflies_beautiful">__spring_grass_with_butterflies_beautiful</option>
+            <option value="__watercolor_leaves_wedding_invitation">__watercolor_leaves_wedding_invitation</option>
+            <option value="__yellow_shiny_valentine_love">__yellow_shiny_valentine_love</option>
+          </select>
+			<textarea name="template_message"></textarea>
 					<fieldset class="scheduler-border">
 						<legend class="scheduler-border">Color Effects</legend>
 						<div class="form-group">
@@ -60,7 +72,7 @@
 							</div>
 						</div>
 					</fieldset>
-					
+
 					<fieldset class="scheduler-border">
 						<legend class="scheduler-border">Blur Effects</legend>
 						<div class="form-group">
@@ -90,7 +102,7 @@
 								<label class="radio-inline"><input type="radio" value="1" name="opaque">ON</label>
 							</div>
 						</div>
-					</fieldset>	
+					</fieldset>
 
 					<button type="submit" class="btn btn-default">Submit</button>
 				</form>
@@ -108,7 +120,7 @@
 					<img class="img-responsive" src="./templates/happybirthday.png">
 				</fieldset>
 			</div>
-			<div class="col-md-12"><h1>Footer</h1></div>			
+			<div class="col-md-12"><h1>Footer</h1></div>
 		</div>
 	</div>
 </body>
@@ -117,12 +129,12 @@
 	function encodeImgtoBase64(element) {
 		var img = element.files[0];
 		var reader = new FileReader();
-		reader.onloadend = function() { 
+		reader.onloadend = function() {
 			$("#displayImg").attr("src", reader.result);
 			callApi(reader.result)
 		}
 		reader.readAsDataURL(img);
-    }
+    }
 
 	function appendValue(e) {
 		var value = jQuery(e).value
@@ -130,11 +142,13 @@
 	}
 
 	function callApi( inputImage ) {
-		var template_name = $("input[name='template_name']").val()
+		var template_name = $("[name='template_name']").val()
+		var template_message = $("[name='template_message']").val()
+
 		$.ajax({
 			url: "http://localhost:3000",
 			method: "POST",
-			data: { inputImage, template_name },
+			data: { inputImage, template_name, template_message },
 			dataType: "html"
 		})
 		.done(function( msg ) {

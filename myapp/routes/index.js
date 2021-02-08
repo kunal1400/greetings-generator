@@ -34,9 +34,9 @@ router.get('/', function(req, res, next) {
 	// // 				text: 'Hello world!',
 	// // 				alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
 	// // 				alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-	// // 		    },
-	// // 		    300,
-	// // 		    300
+	// // 		    },
+	// // 		    300,
+	// // 		    300
 	// // 		)
 	// // 	})
 	// // 	.then(function() {
@@ -48,21 +48,21 @@ router.get('/', function(req, res, next) {
 	// // })
 	// .then(function(greeting) {
 	// 	if (currentTemplate.name == "christmasHolidayTemplate") {
-	// 		getCircularImage( inputImage, currentTemplate)			
+	// 		getCircularImage( inputImage, currentTemplate)
 	// 		.then(function(modifiedNooraImage){
 	// 			return greeting
 	// 			.composite(modifiedNooraImage, currentTemplate.imgToReplaceX, currentTemplate.imgToReplaceY, {
 	// 				mode: currentTemplate.mode,
 	// 				opacitySource: currentTemplate.opacitySource,
 	// 				opacityDest: currentTemplate.opacityDest
-	// 			})				
+	// 			})
 	// 			.writeAsync(currentTemplate.outputFile); // save
 	// 		})
 	// 		.catch(err => {
 	// 			console.error(err);
-	// 			return err			
+	// 			return err
 	// 		})
-	// 	} 
+	// 	}
 	// 	else {
 	// 		var nooraImage = Jimp.read(inputImage)
 	// 		.then(nooraImage => {
@@ -76,23 +76,23 @@ router.get('/', function(req, res, next) {
 	// 				mode: currentTemplate.mode,
 	// 				opacitySource: currentTemplate.opacitySource,
 	// 				opacityDest: currentTemplate.opacityDest
-	// 			})				
+	// 			})
 	// 			.writeAsync(currentTemplate.outputFile); // save
 	// 		})
 	// 		.catch(err => {
 	// 			console.error(err);
-	// 			return err			
+	// 			return err
 	// 		});
 	// 	}
 	// })
 	// .then(function(){
- //  		res.send({ status: true })
+ //  		res.send({ status: true })
 	// })
 	// .catch(err => {
 	// 	console.error(err);
- //  		res.send({ status: false })
+ //  		res.send({ status: false })
 	// });
-  	res.send({ status: true })
+  	res.send({ status: true })
 });
 
 /* Generate greeting api. */
@@ -113,7 +113,9 @@ router.post('/', function(req, res, next) {
 		res.send({status:false, message: "template_name is required"})
 		return
 	}
-	
+
+	let templateMessage = req.body.template_message
+
 	/**
 	* 1: Getting image from request body it can be base64 or image url
 	**/
@@ -129,7 +131,7 @@ router.post('/', function(req, res, next) {
 		var base64Image = new Buffer(imageData[1], 'base64'); // Ta-da
 	}
 
-	// let base64Image = "../templates/Models/nora-fatehi.jpg"	
+	// let base64Image = "../templates/Models/nora-fatehi.jpg"
 
 	/**
 	* 2: Getting template from data
@@ -140,7 +142,8 @@ router.post('/', function(req, res, next) {
 
 		Jimp.read(inputFile)
 		.then(function(mainGreeting) {
-			if (type === "_frame") {
+			// We should not resize the frame otherwise it may create an issue
+			if (type === "_frame" && false) {
 				return mainGreeting.resize(requiredWidth, requiredHeight)
 			}
 			else {
@@ -148,20 +151,20 @@ router.post('/', function(req, res, next) {
 			}
 		})
 		.then(function(greeting) {
-			if (convertToShape && convertToShape == "circular") {
-				return getCircularImage( base64Image, currentTemplate)			
-				.then(function(modifiedNooraImage){
-					/** 
-					* Appending the input image in the choosen greeting	
+			if (convertToShape) {
+				return convertImageShape( base64Image, convertToShape)
+				.then(function(modifiedNooraImage) {
+					/**
+					* Appending the input image in the choosen greeting
 					**/
 					return greeting
 					.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY, {
 						mode: mode,
 						opacitySource: opacitySource,
 						opacityDest: opacityDest
-					})					
-				})				
-			} 
+					})
+				})
+			}
 			else {
 				return Jimp.read( base64Image )
 				.then(nooraImage => {
@@ -169,7 +172,13 @@ router.post('/', function(req, res, next) {
 					* Resizing the input image as per required in the template
 					**/
 					if (requiredWidth && requiredHeight) {
-						return nooraImage.resize(requiredWidth, requiredHeight)
+						if (requiredWidth == "auto" && requiredHeight == "auto") {
+							// Setting the width and height of input image equals to greeting image
+							return nooraImage.resize(greeting.bitmap.width, greeting.bitmap.height)
+						}
+						else {
+							return nooraImage.resize(requiredWidth, requiredHeight)
+						}
 					}
 					else {
 						return nooraImage
@@ -177,7 +186,7 @@ router.post('/', function(req, res, next) {
 				})
 				.then(function(nooraImage) {
 					/**
-					* Resizing the input image as per required in the template
+					* Rotating the input image as per required in the template
 					**/
 					if (inputFileRotateDeg) {
 						return nooraImage.rotate(inputFileRotateDeg)
@@ -186,28 +195,71 @@ router.post('/', function(req, res, next) {
 						return nooraImage
 					}
 				})
-				.then(function(modifiedNooraImage) {					
-					/** 
-					* Appending the input image in the choosen greeting	
+				.then(function(modifiedNooraImage) {
+					/**
+					* Appending the input image in the choosen greeting
 					**/
-					return greeting
-					.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY, {
-						mode: mode,
-						opacitySource: opacitySource,
-						opacityDest: opacityDest
-					})
-				})				
+					if (mode) {
+						return greeting
+						.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY, {
+							mode: mode,
+							opacitySource: opacitySource,
+							opacityDest: opacityDest
+						})
+					} else {
+						return greeting
+						.composite(modifiedNooraImage, imgToReplaceX, imgToReplaceY)
+					}
+				})
+				.then(function(generatedTemplate){
+					if (templateMessage && templateMessage.length > 0) {
+						/*Jimp.HORIZONTAL_ALIGN_LEFT;
+						Jimp.HORIZONTAL_ALIGN_CENTER;
+						Jimp.HORIZONTAL_ALIGN_RIGHT;
+						Jimp.VERTICAL_ALIGN_TOP;
+						Jimp.VERTICAL_ALIGN_MIDDLE;
+						Jimp.VERTICAL_ALIGN_BOTTOM;*/
+						return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK)
+						.then(font => {
+							return generatedTemplate.print(font, 0, 0, {
+									text: templateMessage,
+									alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+									alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+								},
+								generatedTemplate.bitmap.width - 30, 
+								generatedTemplate.bitmap.height - 30
+							)
+						})
+					}
+					else {
+						return generatedTemplate
+					}					
+				})
 			}
 		})
+		.then(function(generatedGreeting) {
+			/**
+			* Setting watermark at the center
+			**/
+			return Jimp.read('https://destatic.blob.core.windows.net/images/nodejs-logo.png')
+			.then(function(watermark) {
+				return generatedGreeting
+				.composite(watermark, Jimp.HORIZONTAL_ALIGN_CENTER, Jimp.VERTICAL_ALIGN_MIDDLE, {
+					mode: Jimp.BLEND_SOURCE_OVER,
+					opacityDest: 1,
+					opacitySource: 0.5
+				})
+			})			
+		})
 		.then(function(jimpInstance){
-	  		return jimpInstance.writeAsync(outputFile);
+	  		return jimpInstance.writeAsync(outputFile);
 		})
 		.then(function(){
-	  		res.send({ status: true, data: outputFile })
+	  		res.send({ status: true, data: outputFile })
 		})
 		.catch(err => {
 			console.error(err);
-	  		res.send({ status: false })
+	  		res.send({ status: false })
 		})
 	}
 	else {
@@ -253,7 +305,7 @@ const getTemplateData = (template_name) => {
 			name: "holidayTemplate",
 			inputFile: '../templates/holidaycard.png',
 			inputFileRotateDeg: 0,
-			convertToShape: null,			
+			convertToShape: null,
 			requiredWidth: 1799,
 			requiredHeight: 853,
 			outputFile: '../templates/output/holidaycardoutput.png',
@@ -263,7 +315,7 @@ const getTemplateData = (template_name) => {
 			opacitySource: 0.5,
 			opacityDest: 1.0, // i.e Base Image
 			text: "Hello World",
-			type: "_greeting"			
+			type: "_greeting"
 		}
 	}
 	else if( template_name == "christmasHolidayTemplate") {
@@ -271,7 +323,7 @@ const getTemplateData = (template_name) => {
 			name: "christmasHolidayTemplate",
 			inputFile: '../templates/CreamandLightChristmasCard.png',
 			inputFileRotateDeg: 0,
-			convertToShape: "circular",			
+			convertToShape: "__circularmask",
 			requiredWidth: 1000,
 			requiredHeight: 1000,
 			outputFile: '../templates/output/CreamandLightChristmasCardOutput.png',
@@ -281,7 +333,7 @@ const getTemplateData = (template_name) => {
 			opacitySource: 0.5,
 			opacityDest: 1.0, // i.e Base Image
 			text: "Hello World",
-			type: "_greeting"			
+			type: "_greeting"
 		}
 	}
 	else if( template_name == "scrapbook") {
@@ -289,7 +341,7 @@ const getTemplateData = (template_name) => {
 			name: "scrapbook",
 			inputFile: '../templates/scrapbook.png',
 			inputFileRotateDeg: 1.45,
-			convertToShape: null,			
+			convertToShape: null,
 			requiredWidth: 673,
 			requiredHeight: 898,
 			outputFile: '../templates/output/scrapbookoutput.png',
@@ -299,7 +351,7 @@ const getTemplateData = (template_name) => {
 			opacitySource: 1.0,
 			opacityDest: 1.0, // i.e Base Image
 			text: "Hello World",
-			type: "_greeting"			
+			type: "_greeting"
 		}
 	}
 	else if( template_name == "__beautiful_love_frame_background") {
@@ -307,17 +359,56 @@ const getTemplateData = (template_name) => {
 			name: "__beautiful_love_frame_background",
 			inputFile: '../templates/Frames/__beautiful_love_frame_background.png',
 			inputFileRotateDeg: 0,
-			convertToShape: null,			
+			convertToShape: null,
 			requiredWidth: 542,
 			requiredHeight: 640,
 			outputFile: '../templates/output/beautiful_love_frame_background.png',
 			imgToReplaceX: 0,
 			imgToReplaceY: 0,
-			mode: Jimp.BLEND_OVERLAY,
+			mode: Jimp.BLEND_DESTINATION_OVER,
 			opacitySource: 1.0,
 			opacityDest: 1.0, // i.e Base Image
 			text: "Hello World",
-			type: "_frame"			
+			type: "_frame"
+		}
+	}
+  else if( template_name == "__birthday_background") {
+		return {
+			name: "__birthday_background",
+			inputFile: '../templates/Frames/__birthday_background.png',
+			inputFileRotateDeg: 0,
+			convertToShape: null,
+			requiredWidth: 730,
+			requiredHeight: 342,
+			outputFile: '../templates/output/birthday_background.png',
+			imgToReplaceX: 0,
+			imgToReplaceY: 0,
+			mode: Jimp.BLEND_DESTINATION_OVER,
+			opacitySource: 1.0,
+			opacityDest: 1.0, // i.e Base Image
+			text: "Hello World",
+			type: "_greeting"
+		}
+	}
+  else if( template_name == "__christmas_border_frame" || template_name == "__elegant_golden_frame" || template_name == "__realistic_frame_made_of_fir" || template_name == "__red_transparent_love_heart" || template_name == "__spring_grass_with_butterflies_beautiful" || template_name == "__watercolor_leaves_wedding_invitation" || template_name == "__yellow_shiny_valentine_love" ) {
+	    /**
+	    * These all are square template so we can easily resize it to any size
+	    **/
+		return {
+			name: "__birthday_background",
+			inputFile: `../templates/Frames/${template_name}.png`,
+			inputFileRotateDeg: 0,
+			convertToShape: "__heartmaskimage",
+			requiredWidth: "auto",
+			requiredHeight: "auto",
+			outputFile: `../templates/output/${template_name}.png`,
+			imgToReplaceX: 0,
+			imgToReplaceY: 0,
+			mode: Jimp.BLEND_DESTINATION_OVER,
+			opacitySource: 1.0,
+			opacityDest: 1.0, // i.e Base Image
+			text: "Hello World",
+			type: "_greeting"
 		}
 	}
 	else {
@@ -325,24 +416,28 @@ const getTemplateData = (template_name) => {
 	}
 }
 
-const getCircularImage = ( img, currentTemplate ) => {
-	var w = currentTemplate.requiredWidth
-	var h = currentTemplate.requiredHeight
+const convertImageShape = ( img, shape ) => {
+	// var w = currentTemplate.requiredWidth
+	// var h = currentTemplate.requiredHeight
 
 	return Jimp.read( img )
-	.then(function( inputImage ) {
-		// var w = inputImage.bitmap.width
-		// var h = inputImage.bitmap.height
-		return inputImage.resize(w,h)		
-	})
+	// .then(function( inputImage ) {
+	// 	// var w = inputImage.bitmap.width
+	// 	// var h = inputImage.bitmap.height
+	// 	return inputImage.resize(w,h)
+	// })
 	.then(function(inputImage) {
-		return Jimp.read('../templates/circularmask.png')
-		.then(function( circularImage ) {
-			return circularImage.resize(w, h)
+
+		var w = inputImage.bitmap.width
+		var h = inputImage.bitmap.height
+
+		return Jimp.read(`../templates/Masks/${shape}.png`)
+		.then(function( maskImage ) {
+			// resizing the mask image to input image
+			return maskImage.resize(w, h)
 		})
-		.then(function( circularResizedImage ) {
-			return inputImage.mask(circularResizedImage, 0, 0)
-    		//.write("lenna-circle.png")
+		.then(function( maskedResizedImage ) {
+			return inputImage.mask(maskedResizedImage, 0, 0)
 		})
 		.catch(function(error){
 			return error
@@ -350,7 +445,34 @@ const getCircularImage = ( img, currentTemplate ) => {
 	})
 	.catch(function(error){
 		return error
-	})	
+	})
 }
+
+// const convertImageShape = ( img, currentTemplate ) => {
+// 	var w = currentTemplate.requiredWidth
+// 	var h = currentTemplate.requiredHeight
+
+// 	return Jimp.read( img )
+// 	.then(function( inputImage ) {
+// 		// var w = inputImage.bitmap.width
+// 		// var h = inputImage.bitmap.height
+// 		return inputImage.resize(w,h)
+// 	})
+// 	.then(function(inputImage) {
+// 		return Jimp.read('../templates/Frames/__beautiful_love_frame_background.png')
+// 		.then(function( circularImage ) {
+// 			return circularImage.resize(w, h)
+// 		})
+// 		.then(function( circularResizedImage ) {
+// 			return inputImage.mask(circularResizedImage, 0, 0)
+// 		})
+// 		.catch(function(error){
+// 			return error
+// 		})
+// 	})
+// 	.catch(function(error){
+// 		return error
+// 	})
+// }
 
 module.exports = router;
