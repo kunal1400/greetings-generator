@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 var Jimp = require('jimp');
-var outputDirectory = "../templates/output/"
 
 /**
 * COMPOSITION NOTES:
@@ -21,79 +20,44 @@ var outputDirectory = "../templates/output/"
 **/
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
-	// Jimp.read(currentTemplate.inputFile)
-	// // .then(greeting => {
-	// // 	Jimp.loadFont(Jimp.FONT_SANS_8_WHITE)
-	// // 	.then(font => {
-	// // 		greeting.print(
-	// // 			font,
-	// // 			10,
-	// // 			10,
-	// // 			{
-	// // 				text: 'Hello world!',
-	// // 				alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-	// // 				alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-	// // 		    },
-	// // 		    300,
-	// // 		    300
-	// // 		)
-	// // 	})
-	// // 	.then(function() {
-	// // 		return greeting
-	// // 	})
-	// // 	.catch(function(e) {
-	// // 		return e
-	// // 	})
-	// // })
-	// .then(function(greeting) {
-	// 	if (currentTemplate.name == "christmasHolidayTemplate") {
-	// 		getCircularImage( inputImage, currentTemplate)
-	// 		.then(function(modifiedNooraImage){
-	// 			return greeting
-	// 			.composite(modifiedNooraImage, currentTemplate.imgToReplaceX, currentTemplate.imgToReplaceY, {
-	// 				mode: currentTemplate.mode,
-	// 				opacitySource: currentTemplate.opacitySource,
-	// 				opacityDest: currentTemplate.opacityDest
-	// 			})
-	// 			.writeAsync(currentTemplate.outputFile); // save
-	// 		})
-	// 		.catch(err => {
-	// 			console.error(err);
-	// 			return err
-	// 		})
-	// 	}
-	// 	else {
-	// 		var nooraImage = Jimp.read(inputImage)
-	// 		.then(nooraImage => {
-	// 			return nooraImage
-	// 			.resize(currentTemplate.requiredWidth, currentTemplate.requiredHeight)
-	// 			.rotate(currentTemplate.inputFileRotateDeg)
-	// 		})
-	// 		.then(function(modifiedNooraImage){
-	// 			return greeting
-	// 			.composite(modifiedNooraImage, currentTemplate.imgToReplaceX, currentTemplate.imgToReplaceY, {
-	// 				mode: currentTemplate.mode,
-	// 				opacitySource: currentTemplate.opacitySource,
-	// 				opacityDest: currentTemplate.opacityDest
-	// 			})
-	// 			.writeAsync(currentTemplate.outputFile); // save
-	// 		})
-	// 		.catch(err => {
-	// 			console.error(err);
-	// 			return err
-	// 		});
-	// 	}
-	// })
-	// .then(function(){
- //  		res.send({ status: true })
-	// })
-	// .catch(err => {
-	// 	console.error(err);
- //  		res.send({ status: false })
-	// });
+router.get('/', function(req, res, next) {	
   	res.send({ status: true })
 });
+
+router.post('/reshape', function(req, res, next) {
+	if(!req.body.inputImage) {
+		res.send({status:false, message: "inputImage is required"})
+		return
+	}
+
+	if(!req.body.convertToShape) {
+		res.send({status:false, message: "convertToShape is required"})
+		return
+	}
+
+	/**
+	* 1: Getting image from request body it can be base64 or image url
+	**/
+	let base64Image = getBase64FromString( req.body.inputImage )
+
+	/**
+	* 2: Getting image from request body it can be base64 or image url
+	**/
+	convertImageShape( base64Image, req.body.convertToShape)	
+	.then(function(jimpInstance) {
+		jimpInstance.getBase64(Jimp.AUTO, function(error, reShapedImage) {
+			if (error) {
+				res.send({status:false, error})				
+			} else {
+				res.send({status:true, templateData: reShapedImage})			
+			}
+		});
+	})
+	.catch(function(error) {
+		res.send({status:false, error})		
+	})
+
+})
 
 /* Generate greeting api. */
 /**
@@ -119,19 +83,7 @@ router.post('/', function(req, res, next) {
 	/**
 	* 1: Getting image from request body it can be base64 or image url
 	**/
-	let inputImage = req.body.inputImage
-	// Removing `data:image/png;base64,` from string so it will be original base 64 image
-	let imageData = inputImage.split(",")
-
-	if (typeof Buffer.from === "function") {
-		// Node 5.10+
-		var base64Image = Buffer.from(imageData[1], 'base64'); // Ta-da
-	} else {
-		// older Node versions, now deprecated
-		var base64Image = new Buffer(imageData[1], 'base64'); // Ta-da
-	}
-
-	// let base64Image = "../templates/Models/nora-fatehi.jpg"
+	let inputImage = getBase64FromString( req.body.inputImage )
 
 	/**
 	* 2: Getting template from data
@@ -252,10 +204,11 @@ router.post('/', function(req, res, next) {
 			})			
 		})
 		.then(function(jimpInstance){
-	  		return jimpInstance.writeAsync(outputFile);
+	 		// return jimpInstance.writeAsync(outputFile);
+	  		return jimpInstance.getBase64Async(Jimp.AUTO);
 		})
-		.then(function(){
-	  		res.send({ status: true, data: outputFile })
+		.then(function(templateData) {
+	  		res.send({ status: true, templateData })
 		})
 		.catch(err => {
 			console.error(err);
@@ -416,28 +369,41 @@ const getTemplateData = (template_name) => {
 	}
 }
 
+/**
+* Resizing the mask image according to input image is causing error -ex- if input image is 
+* rectangle then mask image become oval instead of circle.
+* So the mask image should be proper and not resized
+*
+* https://github.com/oliver-moran/jimp/issues/69
+*
+**/
 const convertImageShape = ( img, shape ) => {
 	// var w = currentTemplate.requiredWidth
 	// var h = currentTemplate.requiredHeight
-
+	var w = 500
+	var h = 500
 	return Jimp.read( img )
-	// .then(function( inputImage ) {
-	// 	// var w = inputImage.bitmap.width
-	// 	// var h = inputImage.bitmap.height
-	// 	return inputImage.resize(w,h)
-	// })
+	.then(function( inputImage ) {
+		// resizing the input image
+
+		// var w = inputImage.bitmap.width
+		// var h = inputImage.bitmap.height
+		return inputImage.resize(w,h)
+	})
 	.then(function(inputImage) {
-
-		var w = inputImage.bitmap.width
-		var h = inputImage.bitmap.height
-
 		return Jimp.read(`../templates/Masks/${shape}.png`)
 		.then(function( maskImage ) {
-			// resizing the mask image to input image
+			// resizing the mask image
 			return maskImage.resize(w, h)
 		})
 		.then(function( maskedResizedImage ) {
 			return inputImage.mask(maskedResizedImage, 0, 0)
+		})
+		.then(function(jimpInstance) {
+	 		return jimpInstance.writeAsync('../templates/output/maskedOutput.png');
+		})
+		.then(function(jimpInstance) {
+	 		return Jimp.read('../templates/output/maskedOutput.png')
 		})
 		.catch(function(error){
 			return error
@@ -474,5 +440,18 @@ const convertImageShape = ( img, shape ) => {
 // 		return error
 // 	})
 // }
+
+const getBase64FromString = ( inputImage ) => {	
+	// Removing `data:image/png;base64,` from string so it will be original base 64 image
+	let imageData = inputImage.split(",")
+
+	if (typeof Buffer.from === "function") {
+		// Node 5.10+
+		return Buffer.from(imageData[1], 'base64'); // Ta-da
+	} else {
+		// older Node versions, now deprecated
+		return new Buffer(imageData[1], 'base64'); // Ta-da
+	}
+}
 
 module.exports = router;

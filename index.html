@@ -32,6 +32,14 @@
             <option value="__watercolor_leaves_wedding_invitation">__watercolor_leaves_wedding_invitation</option>
             <option value="__yellow_shiny_valentine_love">__yellow_shiny_valentine_love</option>
           </select>
+
+		<select name="template_shape">
+            <option value="__circle_decoration_frame_flower">__circle_decoration_frame_flower</option>
+            <option value="__circularmask">__circularmask</option>
+            <option value="__heartmaskimage">__heartmaskimage</option>
+            <option value="__square_decoration_frame">__square_decoration_frame</option>
+          </select>
+
 			<textarea name="template_message"></textarea>
 					<fieldset class="scheduler-border">
 						<legend class="scheduler-border">Color Effects</legend>
@@ -113,7 +121,7 @@
 					<div class="form-group">
 						<input onchange="encodeImgtoBase64(this)" type="file" class="form-control">
 					</div>
-					<img src="" alt="" id="displayImg">
+					<img src="" alt="" id="displayImg" style="max-width: 100%">
 				</fieldset>
 				<fieldset class="scheduler-border">
 					<legend class="scheduler-border">Choosen Template</legend>
@@ -144,15 +152,26 @@
 	function callApi( inputImage ) {
 		var template_name = $("[name='template_name']").val()
 		var template_message = $("[name='template_message']").val()
+		var template_shape = $("[name='template_shape']").val()
 
+		// $.ajax({
+		// 	url: "http://localhost:3000",
+		// 	method: "POST",
+		// 	data: { inputImage, template_name, template_message },
+		// 	dataType: "html"
+		// })
 		$.ajax({
-			url: "http://localhost:3000",
+			url: "http://localhost:3000/reshape",
 			method: "POST",
-			data: { inputImage, template_name, template_message },
+			data: { inputImage, convertToShape: template_shape },
 			dataType: "html"
 		})
-		.done(function( msg ) {
-			console.log(msg, "post message")
+		.done(function( data ) {
+			if (data) {
+				console.log(data, "post message")
+				let apiData = JSON.parse(data)
+				$("#displayImg").attr("src", apiData.templateData);
+			}
 		})
 		.fail(function( jqXHR, textStatus ) {
 			alert( "Request failed: " + textStatus );
