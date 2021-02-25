@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var squareFrame = require('./routes/squareFrames');
 
 var app = express();
 
@@ -33,6 +34,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.disable('etag');
 
 app.use('/', indexRouter);
+app.use('/squareFrame', squareFrame);
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
