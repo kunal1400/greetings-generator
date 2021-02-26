@@ -86,7 +86,15 @@ router.post('/', function(req, res, next) {
 	}
 	else {
 		inputFileRotateDeg = parseInt( req.body.inputFileRotateDeg )
-	}		
+	}
+
+	if( !req.body.frameResizePixelsToAdd ) {
+		res.send({status:false, message: "frameResizePixelsToAdd is required"})
+		return
+	}
+	else {
+		frameResizePixelsToAdd = parseInt( req.body.frameResizePixelsToAdd )
+	}	
 
 	/**
 	* 2: Getting the text written by user
@@ -147,6 +155,19 @@ router.post('/', function(req, res, next) {
 	* 7: Starting the greetings generator process
 	**/
 	let inputImageInstance = Jimp.read( base64Image )
+	// Checking if convertToShape is valid and set
+	if ( convertToShape ) {
+		if (utils.availableMasks.indexOf(convertToShape) !== -1) {
+			// Converting the input image shape
+			inputImageInstance = utils.convertImageShape( base64Image, convertToShape)
+		}
+		else {
+			console.log(convertToShape, utils.availableMasks.indexOf(convertToShape), "converted image")
+			res.send({status:false, message: `${convertToShape} is invalid`})
+			return
+		}		
+	}	
+
 	Jimp.read(base_image)
 	.then(function(mainGreeting) {
 		return new Promise(function(resolve, reject) {
@@ -155,14 +176,14 @@ router.post('/', function(req, res, next) {
  				return iii.writeAsync( utils.outputFile + inputfileName );
 			})
 			.then(function(iii) {
+				console.log(iii.bitmap.width + frameResizePixelsToAdd, iii.bitmap.height + frameResizePixelsToAdd, "resize")
 				mainGreeting
-				.resize(iii.bitmap.width, iii.bitmap.height)
+				.resize(iii.bitmap.width + frameResizePixelsToAdd, iii.bitmap.height + frameResizePixelsToAdd)
 				.getBuffer(Jimp.AUTO, function(e, d) {
 					if (!e) { resolve(d) } 
 					else { reject(e) }
 				})
-			})
-			
+			})			
 		})
 		.then(function(bufferedData) {
 			return mainGreeting
@@ -208,20 +229,20 @@ router.post('/', function(req, res, next) {
 			}					
 		})		
 	})
-	.then(function(generatedGreeting) {
-		/**
-		* Setting watermark at the center
-		**/
-		return Jimp.read( utils.waterMarkImage )
-		.then(function(watermark) {
-			return generatedGreeting
-			.composite(watermark, Jimp.HORIZONTAL_ALIGN_CENTER, Jimp.VERTICAL_ALIGN_MIDDLE, {
-				mode: Jimp.BLEND_SOURCE_OVER,
-				opacityDest: 1,
-				opacitySource: 0.5
-			})
-		})			
-	})
+	// .then(function(generatedGreeting) {
+	// 	/**
+	// 	* Setting watermark at the center
+	// 	**/
+	// 	return Jimp.read( utils.waterMarkImage )
+	// 	.then(function(watermark) {
+	// 		return generatedGreeting
+	// 		.composite(watermark, Jimp.HORIZONTAL_ALIGN_CENTER, Jimp.VERTICAL_ALIGN_MIDDLE, {
+	// 			mode: Jimp.BLEND_SOURCE_OVER,
+	// 			opacityDest: 1,
+	// 			opacitySource: 0.5
+	// 		})
+	// 	})			
+	// })
 	.then(function(jimpInstance){
  		return jimpInstance.writeAsync( utils.outputFile + generatedfileName );
  		// return jimpInstance.getBase64Async(Jimp.AUTO);
