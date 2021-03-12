@@ -169,6 +169,13 @@ router.post('/', function(req, res, next) {
 	}	
 
 	Jimp.read(base_image)
+	.then(function(image){
+		return image.color([
+		  { apply: 'hue', params: [-90] },
+		  { apply: 'lighten', params: [50] },
+		  { apply: 'xor', params: ['#06D'] }
+		]);
+	})
 	.then(function(mainGreeting) {
 		return new Promise(function(resolve, reject) {
 			inputImageInstance

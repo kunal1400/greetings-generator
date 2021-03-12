@@ -1,0 +1,41 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "description": "Image Processing APIs",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "host": "localhost:3000",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "/",
+      "description": "API for implementing square frames in uploaded image"
+    },
+    {
+      "name": "squareFrame",
+      "description": "API for implementing square frames in uploaded image"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "paths": [
+  	{
+  		"squareFrame" : {
+  			"post": {
+  				"summary": "Add a new pet to the store"
+  			}
+  	  	}
+  	}
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ]
+}
