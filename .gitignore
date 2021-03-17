@@ -1,3 +1,1 @@
-myapp/node_modules
-myapp/package-lock.json
-myapp/.env
+node_modules
