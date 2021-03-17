@@ -45,12 +45,26 @@ const convertImageShape = ( img, shape ) => {
 	})
 }
 
+const getBase64FromString = ( inputImage ) => {	
+	// Removing `data:image/png;base64,` from string so it will be original base 64 image
+	let imageData = inputImage.split(",")
+
+	if (typeof Buffer.from === "function") {
+		// Node 5.10+
+		return Buffer.from(imageData[1], 'base64'); // Ta-da
+	} else {
+		// older Node versions, now deprecated
+		return new Buffer(imageData[1], 'base64'); // Ta-da
+	}
+}
+
 let json = {
 	availableMasks,
 	waterMarkImage:'https://destatic.blob.core.windows.net/images/nodejs-logo.png',
 	outputFile:'D:/xampp/htdocs/woocommerce_tasks/wp-content/generated-images/',
 	outputFileUrl:'http://localhost/woocommerce_tasks/wp-content/generated-images/',
-	convertImageShape
+	convertImageShape,
+	getBase64FromString
 }
 
 module.exports = json

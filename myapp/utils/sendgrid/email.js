@@ -43,7 +43,7 @@ const sendRawEmail = (to, subject, html) => {
 * bcc can be array if set then email will go to bcc also
 *
 **/
-const sendEmailByTemplate = (to, templateId, dynamic_template_data, bcc=null) => {
+const sendEmailByTemplate = (to, templateId, dynamic_template_data, bcc=null, attachments=null) => {
 
   // Generating the date to send
   let sendData = {
@@ -51,11 +51,15 @@ const sendEmailByTemplate = (to, templateId, dynamic_template_data, bcc=null) =>
     to,
     templateId,
     dynamic_template_data
-  }
+  }  
 
   // Checking if bcc is set
   if (bcc !== null) {
     sendData['bcc'] = bcc
+  }
+
+  if ( Array.isArray(attachments) && attachments.length > 0 ) {
+    sendData['attachments'] = attachments    
   }
 
   // Calling sendgrid api
